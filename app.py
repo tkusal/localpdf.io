@@ -46,6 +46,7 @@ def allowed_file(filename):
 # Template HTML
 HTML_TEMPLATE = """
 
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -57,15 +58,15 @@ HTML_TEMPLATE = """
         body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; flex-direction: column; }
         
         /* Navbar */
-        .navbar { background: rgba(255, 255, 255, 0.1); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); backdrop-filter: blur(10px); color: white; }
-        .navbar-brand { font-size: 1.5em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; }
-        .navbar-controls { display: flex; align-items: center; gap: 20px; }
+        .navbar { background: rgba(255, 255, 255, 0.1); padding: 15px 30px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); backdrop-filter: blur(10px); color: white; }
+        .navbar-brand { font-size: 1.5em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; justify-self: start; }
         
-        .tool-select-wrapper { position: relative; }
-        .tool-select { appearance: none; background: white; color: #333; padding: 10px 40px 10px 20px; border: none; border-radius: 25px; font-size: 1em; cursor: pointer; outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-weight: bold; width: 300px; }
-        .tool-select-wrapper::after { content: '▼'; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #666; pointer-events: none; font-size: 0.8em; }
+        .tool-select-wrapper { justify-self: center; position: relative; width: 100%; min-width: 300px; max-width: 500px; }
+        .tool-select { appearance: none; background: white; color: #333; padding: 12px 40px 12px 20px; border: none; border-radius: 25px; font-size: 1em; cursor: pointer; outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-weight: bold; width: 100%; transition: box-shadow 0.3s; }
+        .tool-select:hover { box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .tool-select-wrapper::after { content: '▼'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #666; pointer-events: none; font-size: 0.8em; }
         
-        .lang-switch { display: flex; background: rgba(255, 255, 255, 0.2); border-radius: 20px; overflow: hidden; }
+        .lang-switch { justify-self: end; display: flex; background: rgba(255, 255, 255, 0.2); border-radius: 20px; overflow: hidden; }
         .lang-btn { background: none; border: none; color: white; padding: 8px 15px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: background 0.3s; }
         .lang-btn.active { background: white; color: #667eea; }
         
@@ -79,9 +80,9 @@ HTML_TEMPLATE = """
         .tool-card h3 { color: #333; margin-bottom: 15px; font-size: 1.8em; }
         .tool-card p { color: #666; margin-bottom: 30px; font-size: 1.1em; }
         
-        .upload-area { border: 2px dashed #ddd; border-radius: 10px; padding: 50px 20px; text-align: center; background: #f9f9f9; margin: 20px 0; transition: all 0.3s ease; cursor: pointer; }
-        .upload-area:hover { border-color: #667eea; background: #f0f4ff; }
-        .upload-area.dragover { border-color: #667eea; background: #e8f0ff; }
+        .upload-area { border: 2px dashed #ddd; border-radius: 10px; padding: 50px 20px; text-align: center; background: #f9f9f9; margin: 20px 0; transition: all 0.3s ease; cursor: pointer; position: relative; overflow: hidden; }
+        .upload-area:hover { border-color: #667eea; background: #f0f4ff; transform: scale(1.02); }
+        .upload-area.dragover { border-color: #667eea; background: #e8f0ff; transform: scale(1.05); }
         .file-input { display: none; }
         .upload-btn { background: #667eea; color: white; padding: 12px 30px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.1em; transition: background 0.3s ease; pointer-events: none; }
         .upload-btn:hover { background: #5a6fd8; }
@@ -90,10 +91,11 @@ HTML_TEMPLATE = """
         .convert-btn:hover { background: #1e7e34; }
         .convert-btn:disabled { background: #ccc; cursor: not-allowed; }
         
-        .file-list { margin-top: 20px; text-align: left; }
-        .file-item { background: #f8f9fa; padding: 12px 15px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; }
-        .file-item-name { display: flex; align-items: center; gap: 10px; font-weight: 500; color: #444; }
-        .remove-btn { background: #ff4757; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; transition: background 0.2s; font-size: 0.9em; }
+        .file-list { margin-top: 20px; text-align: left; max-height: 250px; overflow-y: auto; padding-right: 10px; }
+        .file-item { background: #f8f9fa; padding: 12px 15px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; transition: background 0.2s; }
+        .file-item:hover { background: #f1f3f5; }
+        .file-item-name { display: flex; align-items: center; gap: 10px; font-weight: 500; color: #444; word-break: break-all; }
+        .remove-btn { background: #ff4757; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; transition: background 0.2s; font-size: 0.9em; flex-shrink: 0; }
         .remove-btn:hover { background: #ff6b81; }
         
         .progress { width: 100%; background: #f0f0f0; border-radius: 10px; margin: 30px 0; overflow: hidden; }
@@ -115,6 +117,17 @@ HTML_TEMPLATE = """
         .tool-options label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; }
         .tool-options input, .tool-options select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1em; margin-bottom: 15px; transition: border-color 0.2s; }
         .tool-options input:focus, .tool-options select:focus { border-color: #667eea; outline: none; }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar { display: flex; flex-direction: column; gap: 15px; text-align: center; padding: 15px; }
+            .navbar-brand { justify-self: center; align-self: center; justify-content: center; width: 100%; }
+            .tool-select-wrapper { width: 100%; min-width: 100%; }
+            .lang-switch { align-self: center; justify-self: center; }
+            .container { margin: 20px auto; padding: 15px; }
+            .tool-card { padding: 25px 15px; }
+            .header h1 { font-size: 2em; }
+        }
     </style>
 </head>
 <body>
@@ -122,16 +135,14 @@ HTML_TEMPLATE = """
         <div class="navbar-brand" onclick="resetTool()">
             🌟 LocalPDF.io
         </div>
-        <div class="navbar-controls">
-            <div class="tool-select-wrapper">
-                <select id="tool-select" class="tool-select" onchange="onToolSelectChange(this.value)">
-                    <option value="" disabled selected data-i18n="select_tool">Selecione uma ferramenta...</option>
-                </select>
-            </div>
-            <div class="lang-switch">
-                <button class="lang-btn active" onclick="setLanguage('pt-BR')" id="btn-pt-BR">PT-BR</button>
-                <button class="lang-btn" onclick="setLanguage('en')" id="btn-en">EN</button>
-            </div>
+        <div class="tool-select-wrapper">
+            <select id="tool-select" class="tool-select" onchange="onToolSelectChange(this.value)">
+                <option value="" disabled selected data-i18n="select_tool">Selecione uma ferramenta...</option>
+            </select>
+        </div>
+        <div class="lang-switch">
+            <button class="lang-btn active" onclick="setLanguage('pt-BR')" id="btn-pt-BR">PT-BR</button>
+            <button class="lang-btn" onclick="setLanguage('en')" id="btn-en">EN</button>
         </div>
     </nav>
 
@@ -148,7 +159,7 @@ HTML_TEMPLATE = """
 
             <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
                 <input type="file" id="file-input" class="file-input" multiple accept=".pdf,.docx,.jpg,.jpeg,.png,.txt,.xlsx,.html">
-                <p id="upload-text" data-i18n="upload_text">📁 Clique aqui ou arraste arquivos para fazer upload</p>
+                <p id="upload-text" data-i18n="upload_text" style="margin-bottom:15px; font-size:1.1em; color:#555;">📁 Clique aqui ou arraste arquivos para fazer upload</p>
                 <button class="upload-btn" data-i18n="choose_files">Escolher Arquivos</button>
             </div>
 
@@ -297,7 +308,7 @@ HTML_TEMPLATE = """
                 }
             });
 
-            // Update Dropdown options
+            // Update Dropdown options (re-sort based on new language)
             updateDropdown();
 
             // Update current tool if selected
@@ -313,7 +324,17 @@ HTML_TEMPLATE = """
             const select = document.getElementById('tool-select');
             select.innerHTML = `<option value="" disabled ${!currentTool ? 'selected' : ''} data-i18n="select_tool">${i18n[currentLang]['select_tool']}</option>`;
             
-            for (const [key, config] of Object.entries(toolConfigs)) {
+            // Sort tools alphabetically based on current language
+            const sortedKeys = Object.keys(toolConfigs).sort((a, b) => {
+                const titleA = i18n[currentLang].tools[a].title;
+                const titleB = i18n[currentLang].tools[b].title;
+                // Remove emojis for sorting purposes to ensure true alphabetical sort
+                const cleanA = titleA.replace(/[^ -]/g, "").trim().toLowerCase();
+                const cleanB = titleB.replace(/[^ -]/g, "").trim().toLowerCase();
+                return cleanA.localeCompare(cleanB);
+            });
+
+            for (const key of sortedKeys) {
                 const option = document.createElement('option');
                 option.value = key;
                 option.innerText = i18n[currentLang].tools[key].title;
@@ -379,7 +400,6 @@ HTML_TEMPLATE = """
                 optionsDiv.classList.remove('hidden');
             }
 
-            // Keep uploaded files if the new tool accepts them? For simplicity, we clear them.
             uploadedFiles = [];
             updateFileList();
             hideResult();
@@ -518,6 +538,7 @@ HTML_TEMPLATE = """
     </script>
 </body>
 </html>
+
 
 """
 
