@@ -57,6 +57,12 @@ No accounts. No cloud. No data leaving your computer.
 - **✂️ Split PDF** — Separate each page into individual files
 - **📦 Compress PDF** — Reduce file size while preserving quality
 
+### 🎨 Interface and Experience (UX/UI)
+- **Modern & Responsive Design** — Clean interface adaptable to desktop and mobile devices
+- **Centralized Menu** — Fast navigation between tools via an alphabetically sorted dropdown
+- **Internationalization (i18n)** — Native support for English and Portuguese with real-time switching
+- **Interactive Feedback** — Toast notifications, animated buttons, and improved accessibility (a11y)
+
 ## 🚀 Usage
 
 ### With Docker (Recommended)

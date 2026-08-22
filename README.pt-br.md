@@ -54,6 +54,12 @@ LocalPDF.io é uma aplicação web local para manipulação de arquivos PDF e do
 - **✂️ Dividir PDF** - Separe cada página em arquivo individual
 - **📦 Comprimir PDF** - Reduza o tamanho mantendo a qualidade
 
+### 🎨 Interface e Experiência (UX/UI)
+- **Design Moderno e Responsivo** - Interface limpa e adaptável para desktop e mobile
+- **Menu Centralizado** - Navegação rápida entre as ferramentas através de um dropdown organizado alfabeticamente
+- **Internacionalização (i18n)** - Suporte nativo a Português e Inglês com troca em tempo real
+- **Feedback Interativo** - Notificações em Toast, botões animados e acessibilidade (a11y) melhorada
+
 ## 🚀 Como usar
 
 ### Com Docker (Recomendado)
