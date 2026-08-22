@@ -356,9 +356,9 @@ HTML_TEMPLATE = """
             const sortedKeys = Object.keys(toolConfigs).sort((a, b) => {
                 const titleA = i18n[currentLang].tools[a].title;
                 const titleB = i18n[currentLang].tools[b].title;
-                const cleanA = titleA.replace(/[^ -]/g, "").trim().toLowerCase();
-                const cleanB = titleB.replace(/[^ -]/g, "").trim().toLowerCase();
-                return cleanA.localeCompare(cleanB);
+                const textA = titleA.split(' ').slice(1).join(' ').toLowerCase();
+                const textB = titleB.split(' ').slice(1).join(' ').toLowerCase();
+                return textA.localeCompare(textB);
             });
 
             for (const key of sortedKeys) {
