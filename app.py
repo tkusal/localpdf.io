@@ -180,13 +180,13 @@ HTML_TEMPLATE = """
     </div>
 
     <div class="footer">
-        <p data-i18n="developed_by">Desenvolvido por Virgilio Borges</p>
+        <p data-i18n="developed_by">Desenvolvido por Virgilio Borges e contribuidores.</p>
         <div>
             <a href="mailto:virgilio.junior94@gmail.com">✉️ virgilio.junior94@gmail.com</a> |
             <a href="tel:+5595981121572">📱 (95) 98112-1572</a>
         </div>
         <div class="social-icons">
-            <a href="https://github.com/virgiliojr94" target="_blank">🔗 GitHub</a>
+            <a href="https://github.com/virgiliojr94/localpdf.io" target="_blank">🔗 GitHub</a>
             <a href="https://www.linkedin.com/in/virgiliojunior94/" target="_blank">🔗 LinkedIn</a>
         </div>
     </div>
@@ -201,7 +201,7 @@ HTML_TEMPLATE = """
                 'upload_text': '📁 Clique aqui ou arraste arquivos para fazer upload',
                 'choose_files': 'Escolher Arquivos',
                 'convert_btn': 'Converter',
-                'developed_by': 'Desenvolvido por Virgilio Borges',
+                'developed_by': 'Desenvolvido por Virgilio Borges e contribuidores.',
                 'success_title': '✅ Sucesso!',
                 'success_msg': 'Arquivo convertido e baixado com sucesso!',
                 'error_title': '❌ Erro!',
@@ -239,7 +239,7 @@ HTML_TEMPLATE = """
                 'upload_text': '📁 Click here or drag files to upload',
                 'choose_files': 'Choose Files',
                 'convert_btn': 'Convert',
-                'developed_by': 'Developed by Virgilio Borges',
+                'developed_by': 'Developed by Virgilio Borges and contributors.',
                 'success_title': '✅ Success!',
                 'success_msg': 'File successfully converted and downloaded!',
                 'error_title': '❌ Error!',
