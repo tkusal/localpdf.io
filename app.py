@@ -5,7 +5,11 @@ import tempfile
 import zipfile
 
 import fitz  # PyMuPDF
-import ghostscript
+try:
+    import ghostscript
+except (ImportError, RuntimeError) as e:
+    ghostscript = None
+    print(f"Aviso: Ghostscript não está instalado no sistema ({e}). A funcionalidade PDF/A não funcionará localmente.")
 import openpyxl
 from flask import (
     Flask,
@@ -114,6 +118,14 @@ HTML_TEMPLATE = """
                     <h3>✂️ Dividir PDF</h3>
                     <p>Extraia páginas específicas do seu PDF</p>
                 </div>
+                <div class="tool-card" onclick="showTool('delete-pages-pdf')">
+                    <h3>🗑️ Excluir Páginas</h3>
+                    <p>Remova páginas específicas do seu PDF</p>
+                </div>
+                <div class="tool-card" onclick="showTool('rotate-pages-pdf')">
+                    <h3>🔃 Rotacionar Páginas</h3>
+                    <p>Rotacione as páginas do seu PDF</p>
+                </div>
                 <div class="tool-card" onclick="showTool('compress-pdf')">
                     <h3>📦 Comprimir PDF</h3>
                     <p>Reduza o tamanho do seu arquivo PDF</p>
@@ -220,6 +232,18 @@ HTML_TEMPLATE = """
                 accept: '.pdf',
                 multiple: false
             },
+            'delete-pages-pdf': {
+                title: '🗑️ Excluir Páginas',
+                description: 'Exclua páginas específicas do seu PDF (ex: 1, 3, 5-7)',
+                accept: '.pdf',
+                multiple: false
+            },
+            'rotate-pages-pdf': {
+                title: '🔃 Rotacionar Páginas',
+                description: 'Rotacione as páginas do seu PDF',
+                accept: '.pdf',
+                multiple: false
+            },
             'compress-pdf': {
                 title: '📦 Comprimir PDF',
                 description: 'Reduza o tamanho do arquivo PDF mantendo a qualidade',
@@ -280,6 +304,35 @@ HTML_TEMPLATE = """
             document.getElementById('tool-description').innerText = tool.description;
             document.getElementById('file-input').accept = tool.accept;
             document.getElementById('file-input').multiple = tool.multiple;
+
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+            optionsDiv.classList.add('hidden');
+            
+            if (toolName === 'delete-pages-pdf') {
+                optionsDiv.innerHTML = `
+                    <div style="margin-top: 15px; text-align: left;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Páginas a excluir (ex: 1, 3, 5-7):</label>
+                        <input type="text" id="pages-input" placeholder="Ex: 1, 3, 5-7" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em;">
+                    </div>
+                `;
+                optionsDiv.classList.remove('hidden');
+            } else if (toolName === 'rotate-pages-pdf') {
+                optionsDiv.innerHTML = `
+                    <div style="margin-top: 15px; text-align: left;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Páginas (vazio para todas, ex: 1, 3, 5-7):</label>
+                        <input type="text" id="pages-input" placeholder="Ex: 1, 3, 5-7 ou deixe vazio" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; margin-bottom: 10px;">
+                        
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Ângulo de rotação:</label>
+                        <select id="rotation-angle" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em;">
+                            <option value="90">90° (Sentido horário)</option>
+                            <option value="180">180°</option>
+                            <option value="270">270° (Sentido anti-horário)</option>
+                        </select>
+                    </div>
+                `;
+                optionsDiv.classList.remove('hidden');
+            }
 
             uploadedFiles = [];
             updateFileList();
@@ -366,6 +419,15 @@ HTML_TEMPLATE = """
                 formData.append('files', file);
             });
             formData.append('tool', currentTool);
+
+            const pagesInput = document.getElementById('pages-input');
+            if (pagesInput) {
+                formData.append('pages', pagesInput.value);
+            }
+            const rotationAngle = document.getElementById('rotation-angle');
+            if (rotationAngle) {
+                formData.append('angle', rotationAngle.value);
+            }
 
             document.getElementById('progress').classList.remove('hidden');
             document.getElementById('convert-btn').disabled = true;
@@ -544,6 +606,13 @@ def convert():
             output_files = merge_pdfs(files, temp_dir)
         elif tool == "split-pdf":
             output_files = split_pdf(files[0], temp_dir)
+        elif tool == "delete-pages-pdf":
+            pages_str = request.form.get("pages", "")
+            output_files = delete_pages_pdf(files[0], pages_str, temp_dir)
+        elif tool == "rotate-pages-pdf":
+            pages_str = request.form.get("pages", "")
+            angle_str = request.form.get("angle", "90")
+            output_files = rotate_pages_pdf(files[0], pages_str, angle_str, temp_dir)
         elif tool == "compress-pdf":
             output_files = compress_pdf(files[0], temp_dir)
         elif tool == "pdf-to-pdfa":
@@ -641,6 +710,86 @@ def split_pdf(file, temp_dir):
 
     doc.close()
     return output_files
+
+
+def parse_pages(pages_str, max_pages):
+    if not pages_str or not pages_str.strip():
+        return set(range(max_pages))
+    
+    pages = set()
+    parts = pages_str.split(',')
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+        if '-' in part:
+            try:
+                start, end = part.split('-', 1)
+                start_idx = int(start) - 1
+                end_idx = int(end) - 1
+                if start_idx >= 0 and end_idx < max_pages and start_idx <= end_idx:
+                    pages.update(range(start_idx, end_idx + 1))
+            except ValueError:
+                pass
+        else:
+            try:
+                idx = int(part) - 1
+                if 0 <= idx < max_pages:
+                    pages.add(idx)
+            except ValueError:
+                pass
+    return pages
+
+
+def delete_pages_pdf(file, pages_str, temp_dir):
+    pdf_path = os.path.join(temp_dir, secure_filename(file.filename))
+    file.save(pdf_path)
+
+    doc = fitz.open(pdf_path)
+    max_pages = len(doc)
+    pages_to_delete = parse_pages(pages_str, max_pages)
+
+    if not pages_to_delete:
+        doc.close()
+        return [pdf_path]
+    
+    pages_to_keep = [i for i in range(max_pages) if i not in pages_to_delete]
+    
+    if not pages_to_keep:
+        doc.close()
+        raise ValueError("Não é possível excluir todas as páginas do documento.")
+        
+    doc.select(pages_to_keep)
+
+    output_path = os.path.join(temp_dir, "deleted_pages.pdf")
+    doc.save(output_path)
+    doc.close()
+
+    return [output_path]
+
+
+def rotate_pages_pdf(file, pages_str, angle_str, temp_dir):
+    pdf_path = os.path.join(temp_dir, secure_filename(file.filename))
+    file.save(pdf_path)
+
+    doc = fitz.open(pdf_path)
+    max_pages = len(doc)
+    pages_to_rotate = parse_pages(pages_str, max_pages)
+
+    try:
+        angle = int(angle_str)
+    except ValueError:
+        angle = 90
+
+    for page_num in pages_to_rotate:
+        page = doc[page_num]
+        page.set_rotation((page.rotation + angle) % 360)
+
+    output_path = os.path.join(temp_dir, "rotated_pages.pdf")
+    doc.save(output_path)
+    doc.close()
+
+    return [output_path]
 
 
 def compress_pdf(file, temp_dir):
