@@ -45,6 +45,7 @@ def allowed_file(filename):
 
 # Template HTML
 HTML_TEMPLATE = """
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -53,301 +54,341 @@ HTML_TEMPLATE = """
     <title>LocalPDF.io</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .header { text-align: center; color: white; margin-bottom: 40px; }
-        .header h1 { font-size: 3em; margin-bottom: 10px; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Navbar */
+        .navbar { background: rgba(255, 255, 255, 0.1); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); backdrop-filter: blur(10px); color: white; }
+        .navbar-brand { font-size: 1.5em; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .navbar-controls { display: flex; align-items: center; gap: 20px; }
+        
+        .tool-select-wrapper { position: relative; }
+        .tool-select { appearance: none; background: white; color: #333; padding: 10px 40px 10px 20px; border: none; border-radius: 25px; font-size: 1em; cursor: pointer; outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); font-weight: bold; width: 300px; }
+        .tool-select-wrapper::after { content: '▼'; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #666; pointer-events: none; font-size: 0.8em; }
+        
+        .lang-switch { display: flex; background: rgba(255, 255, 255, 0.2); border-radius: 20px; overflow: hidden; }
+        .lang-btn { background: none; border: none; color: white; padding: 8px 15px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: background 0.3s; }
+        .lang-btn.active { background: white; color: #667eea; }
+        
+        .container { max-width: 800px; margin: 40px auto; padding: 20px; flex-grow: 1; display: flex; flex-direction: column; align-items: center; width: 100%; }
+        
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
         .header p { font-size: 1.2em; opacity: 0.9; }
-        .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        .tool-card { background: white; border-radius: 15px; padding: 30px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: transform 0.3s ease; cursor: pointer; }
-        .tool-card:hover { transform: translateY(-5px); }
-        .tool-card h3 { color: #333; margin-bottom: 15px; font-size: 1.5em; }
-        .tool-card p { color: #666; margin-bottom: 20px; }
-        .upload-area { border: 2px dashed #ddd; border-radius: 10px; padding: 40px; text-align: center; background: #f9f9f9; margin: 20px 0; transition: all 0.3s ease; }
+        
+        .tool-card { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; }
+        .tool-card h3 { color: #333; margin-bottom: 15px; font-size: 1.8em; }
+        .tool-card p { color: #666; margin-bottom: 30px; font-size: 1.1em; }
+        
+        .upload-area { border: 2px dashed #ddd; border-radius: 10px; padding: 50px 20px; text-align: center; background: #f9f9f9; margin: 20px 0; transition: all 0.3s ease; cursor: pointer; }
         .upload-area:hover { border-color: #667eea; background: #f0f4ff; }
         .upload-area.dragover { border-color: #667eea; background: #e8f0ff; }
         .file-input { display: none; }
-        .upload-btn { background: #667eea; color: white; padding: 12px 30px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.1em; transition: background 0.3s ease; }
+        .upload-btn { background: #667eea; color: white; padding: 12px 30px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.1em; transition: background 0.3s ease; pointer-events: none; }
         .upload-btn:hover { background: #5a6fd8; }
-        .convert-btn { background: #28a745; color: white; padding: 15px 40px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.2em; margin-top: 20px; transition: background 0.3s ease; }
+        
+        .convert-btn { background: #28a745; color: white; padding: 15px 40px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.2em; margin-top: 30px; transition: background 0.3s ease; width: 100%; font-weight: bold; }
         .convert-btn:hover { background: #1e7e34; }
         .convert-btn:disabled { background: #ccc; cursor: not-allowed; }
-        .file-list { margin-top: 20px; }
-        .file-item { background: #f8f9fa; padding: 10px 15px; margin: 5px 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-        .progress { width: 100%; background: #f0f0f0; border-radius: 10px; margin: 20px 0; }
+        
+        .file-list { margin-top: 20px; text-align: left; }
+        .file-item { background: #f8f9fa; padding: 12px 15px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; }
+        .file-item-name { display: flex; align-items: center; gap: 10px; font-weight: 500; color: #444; }
+        .remove-btn { background: #ff4757; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; transition: background 0.2s; font-size: 0.9em; }
+        .remove-btn:hover { background: #ff6b81; }
+        
+        .progress { width: 100%; background: #f0f0f0; border-radius: 10px; margin: 30px 0; overflow: hidden; }
         .progress-bar { height: 20px; background: #667eea; border-radius: 10px; width: 0%; transition: width 0.3s ease; }
-        .result { margin-top: 20px; padding: 20px; background: #d4edda; border-radius: 10px; color: #155724; }
-        .error { margin-top: 20px; padding: 20px; background: #f8d7da; border-radius: 10px; color: #721c24; }
-        .hidden { display: none; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 5% auto; padding: 30px; width: 80%; max-width: 600px; border-radius: 15px; position: relative; }
-        .close { position: absolute; right: 20px; top: 15px; font-size: 30px; cursor: pointer; color: #aaa; }
-        .close:hover { color: #000; }
-        .back-btn { background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 25px; cursor: pointer; margin-bottom: 20px; }
-        .back-btn:hover { background: #545b62; }
-        .footer { text-align: center; color: white; margin-top: 40px; padding: 20px 0; border-top: 1px solid #ddd; }
+        
+        .result { margin-top: 20px; padding: 20px; background: #d4edda; border-radius: 10px; color: #155724; border: 1px solid #c3e6cb; }
+        .error { margin-top: 20px; padding: 20px; background: #f8d7da; border-radius: 10px; color: #721c24; border: 1px solid #f5c6cb; }
+        .hidden { display: none !important; }
+        
+        .footer { text-align: center; color: white; padding: 20px 0; background: rgba(0,0,0,0.1); margin-top: auto; }
         .footer p { margin-bottom: 10px; }
-        .footer a { color: #667eea; text-decoration: none; }
-        .footer a:hover { text-decoration: underline; }
-        .social-icons { margin-top: 10px; }
-        .social-icons a { margin: 0 10px; color: #667eea; font-size: 1.2em; }
+        .footer a { color: #e2e8f0; text-decoration: none; transition: color 0.2s; }
+        .footer a:hover { color: white; text-decoration: underline; }
+        .social-icons { margin-top: 15px; }
+        .social-icons a { margin: 0 10px; font-size: 1.2em; }
+        
+        /* Options specific styles */
+        .tool-options { text-align: left; margin-top: 25px; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 1px solid #eee; }
+        .tool-options label { display: block; margin-bottom: 8px; font-weight: bold; color: #444; }
+        .tool-options input, .tool-options select { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 1em; margin-bottom: 15px; transition: border-color 0.2s; }
+        .tool-options input:focus, .tool-options select:focus { border-color: #667eea; outline: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🌟 LocalPDF.io</h1>
-            <p>Todas as ferramentas PDF que você precisa em um só lugar</p>
+    <nav class="navbar">
+        <div class="navbar-brand" onclick="resetTool()">
+            🌟 LocalPDF.io
         </div>
-
-        <div id="home-view">
-            <div class="tools-grid">
-                <div class="tool-card" onclick="showTool('pdf-to-images')">
-                    <h3>🖼️ PDF para Imagens</h3>
-                    <p>Converta páginas PDF em imagens JPG ou PNG</p>
-                </div>
-                <div class="tool-card" onclick="showTool('images-to-pdf')">
-                    <h3>📄 Imagens para PDF</h3>
-                    <p>Combine várias imagens em um único PDF</p>
-                </div>
-                <div class="tool-card" onclick="showTool('merge-pdf')">
-                    <h3>🔗 Mesclar PDFs</h3>
-                    <p>Combine vários PDFs em um documento único</p>
-                </div>
-                <div class="tool-card" onclick="showTool('split-pdf')">
-                    <h3>✂️ Dividir PDF</h3>
-                    <p>Extraia páginas específicas do seu PDF</p>
-                </div>
-                <div class="tool-card" onclick="showTool('delete-pages-pdf')">
-                    <h3>🗑️ Excluir Páginas</h3>
-                    <p>Remova páginas específicas do seu PDF</p>
-                </div>
-                <div class="tool-card" onclick="showTool('rotate-pages-pdf')">
-                    <h3>🔃 Rotacionar Páginas</h3>
-                    <p>Rotacione as páginas do seu PDF</p>
-                </div>
-                <div class="tool-card" onclick="showTool('compress-pdf')">
-                    <h3>📦 Comprimir PDF</h3>
-                    <p>Reduza o tamanho do seu arquivo PDF</p>
-                </div>
-                <div class="tool-card" onclick="showTool('pdf-to-pdfa')">
-                    <h3>🔒 PDF para PDF/A</h3>
-                    <p>Padronize seu PDF para arquivamento (PDF/A)</p>
-                </div>
-                <div class="tool-card" onclick="showTool('word-to-pdf')">
-                    <h3>📝 Word para PDF</h3>
-                    <p>Converta um ou mais documentos DOCX para PDF</p>
-                </div>
-                <div class="tool-card" onclick="showTool('excel-to-pdf')">
-                    <h3>📊 Excel para PDF</h3>
-                    <p>Converta planilhas XLSX para PDF</p>
-                </div>
-                <div class="tool-card" onclick="showTool('txt-to-pdf')">
-                    <h3>📄 TXT para PDF</h3>
-                    <p>Converta arquivos de texto simples para PDF</p>
-                </div>
-                <div class="tool-card" onclick="showTool('pdf-to-word')">
-                    <h3>🔄 PDF para Word</h3>
-                    <p>Converta documentos PDF para Word (.docx) editável</p>
-                </div>
-                <div class="tool-card" onclick="showTool('ocr-pdf')">
-                    <h3>🔍 OCR em PDF</h3>
-                    <p>Extraia texto de PDFs e imagens escaneadas com OCR</p>
-                </div>
-                <div class="tool-card" onclick="showTool('html-to-pdf')">
-                    <h3>🌐 HTML para PDF</h3>
-                    <p>Converta arquivos HTML para PDF formatado</p>
-                </div>
+        <div class="navbar-controls">
+            <div class="tool-select-wrapper">
+                <select id="tool-select" class="tool-select" onchange="onToolSelectChange(this.value)">
+                    <option value="" disabled selected data-i18n="select_tool">Selecione uma ferramenta...</option>
+                </select>
             </div>
+            <div class="lang-switch">
+                <button class="lang-btn active" onclick="setLanguage('pt-BR')" id="btn-pt-BR">PT-BR</button>
+                <button class="lang-btn" onclick="setLanguage('en')" id="btn-en">EN</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header" id="welcome-header">
+            <h1 data-i18n="welcome_title">🌟 Bem-vindo ao LocalPDF.io</h1>
+            <p data-i18n="welcome_subtitle">Escolha uma ferramenta no menu acima para começar</p>
         </div>
 
         <!-- Tool Views -->
-        <div id="tool-views" class="hidden">
-            <button class="back-btn" onclick="showHome()">← Voltar</button>
-            <div class="tool-card">
-                <h3 id="tool-title"></h3>
-                <p id="tool-description"></p>
+        <div id="tool-views" class="tool-card hidden">
+            <h3 id="tool-title"></h3>
+            <p id="tool-description"></p>
 
-                <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
-                    <input type="file" id="file-input" class="file-input" multiple accept=".pdf,.docx,.jpg,.jpeg,.png,.txt,.xlsx,.html">
-                    <p>📁 Clique aqui ou arraste arquivos para fazer upload</p>
-                    <button class="upload-btn">Escolher Arquivos</button>
-                </div>
-
-                <div id="file-list" class="file-list"></div>
-
-                <div id="options" class="hidden">
-                    <!-- Opções específicas para cada ferramenta -->
-                </div>
-
-                <button id="convert-btn" class="convert-btn hidden" onclick="convertFiles()">Converter</button>
-
-                <div id="progress" class="progress hidden">
-                    <div id="progress-bar" class="progress-bar"></div>
-                </div>
-
-                <div id="result" class="hidden"></div>
+            <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                <input type="file" id="file-input" class="file-input" multiple accept=".pdf,.docx,.jpg,.jpeg,.png,.txt,.xlsx,.html">
+                <p id="upload-text" data-i18n="upload_text">📁 Clique aqui ou arraste arquivos para fazer upload</p>
+                <button class="upload-btn" data-i18n="choose_files">Escolher Arquivos</button>
             </div>
+
+            <div id="file-list" class="file-list"></div>
+
+            <div id="options" class="hidden tool-options">
+                <!-- Opções específicas para cada ferramenta -->
+            </div>
+
+            <button id="convert-btn" class="convert-btn hidden" onclick="convertFiles()" data-i18n="convert_btn">Converter</button>
+
+            <div id="progress" class="progress hidden">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+
+            <div id="result" class="hidden"></div>
         </div>
+    </div>
 
-        <div class="footer">
-            <p>Desenvolvido por Virgilio Borges</p>
-            <div>
-                <a href="mailto:virgilio.junior94@gmail.com">✉️ virgilio.junior94@gmail.com</a> |
-                <a href="tel:+5595981121572">📱 (95) 98112-1572</a>
-            </div>
-            <div class="social-icons">
-                <a href="https://github.com/virgiliojr94" target="_blank">🔗 GitHub</a>
-                <a href="https://www.linkedin.com/in/virgiliojunior94/" target="_blank">🔗 LinkedIn</a>
-            </div>
+    <div class="footer">
+        <p data-i18n="developed_by">Desenvolvido por Virgilio Borges</p>
+        <div>
+            <a href="mailto:virgilio.junior94@gmail.com">✉️ virgilio.junior94@gmail.com</a> |
+            <a href="tel:+5595981121572">📱 (95) 98112-1572</a>
+        </div>
+        <div class="social-icons">
+            <a href="https://github.com/virgiliojr94" target="_blank">🔗 GitHub</a>
+            <a href="https://www.linkedin.com/in/virgiliojunior94/" target="_blank">🔗 LinkedIn</a>
         </div>
     </div>
 
     <script>
-        let currentTool = '';
-        let uploadedFiles = [];
-
-        const tools = {
-            'pdf-to-images': {
-                title: '🖼️ PDF para Imagens',
-                description: 'Converta cada página do seu PDF em imagens separadas',
-                accept: '.pdf',
-                multiple: false
+        // --- i18n ---
+        const i18n = {
+            'pt-BR': {
+                'select_tool': 'Selecione uma ferramenta...',
+                'welcome_title': '🌟 Bem-vindo ao LocalPDF.io',
+                'welcome_subtitle': 'Escolha uma ferramenta no menu acima para começar',
+                'upload_text': '📁 Clique aqui ou arraste arquivos para fazer upload',
+                'choose_files': 'Escolher Arquivos',
+                'convert_btn': 'Converter',
+                'developed_by': 'Desenvolvido por Virgilio Borges',
+                'success_title': '✅ Sucesso!',
+                'success_msg': 'Arquivo convertido e baixado com sucesso!',
+                'error_title': '❌ Erro!',
+                'error_msg': 'Ocorreu um erro durante a conversão. Tente novamente.',
+                'remove_btn': 'Remover',
+                'options_delete_pages_label': 'Páginas a excluir (ex: 1, 3, 5-7):',
+                'options_delete_pages_placeholder': 'Ex: 1, 3, 5-7',
+                'options_rotate_pages_label': 'Páginas (vazio para todas, ex: 1, 3, 5-7):',
+                'options_rotate_pages_placeholder': 'Ex: 1, 3, 5-7 ou deixe vazio',
+                'options_rotate_angle_label': 'Ângulo de rotação:',
+                'angle_90': '90° (Sentido horário)',
+                'angle_180': '180°',
+                'angle_270': '270° (Sentido anti-horário)',
+                'tools': {
+                    'pdf-to-images': { title: '🖼️ PDF para Imagens', desc: 'Converta páginas PDF em imagens JPG ou PNG' },
+                    'images-to-pdf': { title: '📄 Imagens para PDF', desc: 'Combine várias imagens em um único PDF' },
+                    'merge-pdf': { title: '🔗 Mesclar PDFs', desc: 'Combine vários PDFs em um documento único' },
+                    'split-pdf': { title: '✂️ Dividir PDF', desc: 'Extraia páginas específicas do seu PDF' },
+                    'delete-pages-pdf': { title: '🗑️ Excluir Páginas', desc: 'Exclua páginas específicas do seu PDF (ex: 1, 3, 5-7)' },
+                    'rotate-pages-pdf': { title: '🔃 Rotacionar Páginas', desc: 'Rotacione as páginas do seu PDF' },
+                    'compress-pdf': { title: '📦 Comprimir PDF', desc: 'Reduza o tamanho do seu arquivo PDF' },
+                    'pdf-to-pdfa': { title: '🔒 PDF para PDF/A', desc: 'Padronize seu PDF para arquivamento (PDF/A)' },
+                    'word-to-pdf': { title: '📝 Word para PDF', desc: 'Converta um ou mais documentos DOCX para PDF' },
+                    'excel-to-pdf': { title: '📊 Excel para PDF', desc: 'Converta planilhas XLSX para PDF' },
+                    'txt-to-pdf': { title: '📄 TXT para PDF', desc: 'Converta arquivos de texto simples para PDF' },
+                    'pdf-to-word': { title: '🔄 PDF para Word', desc: 'Converta documentos PDF para Word (.docx) editável' },
+                    'ocr-pdf': { title: '🔍 OCR em PDF', desc: 'Extraia texto de PDFs e imagens escaneadas com OCR' },
+                    'html-to-pdf': { title: '🌐 HTML para PDF', desc: 'Converta arquivos HTML para PDF formatado' }
+                }
             },
-            'images-to-pdf': {
-                title: '📄 Imagens para PDF',
-                description: 'Combine múltiplas imagens em um único arquivo PDF',
-                accept: '.jpg,.jpeg,.png',
-                multiple: true
-            },
-            'merge-pdf': {
-                title: '🔗 Mesclar PDFs',
-                description: 'Combine vários arquivos PDF em um documento único',
-                accept: '.pdf',
-                multiple: true
-            },
-            'split-pdf': {
-                title: '✂️ Dividir PDF',
-                description: 'Extraia páginas específicas do seu PDF',
-                accept: '.pdf',
-                multiple: false
-            },
-            'delete-pages-pdf': {
-                title: '🗑️ Excluir Páginas',
-                description: 'Exclua páginas específicas do seu PDF (ex: 1, 3, 5-7)',
-                accept: '.pdf',
-                multiple: false
-            },
-            'rotate-pages-pdf': {
-                title: '🔃 Rotacionar Páginas',
-                description: 'Rotacione as páginas do seu PDF',
-                accept: '.pdf',
-                multiple: false
-            },
-            'compress-pdf': {
-                title: '📦 Comprimir PDF',
-                description: 'Reduza o tamanho do arquivo PDF mantendo a qualidade',
-                accept: '.pdf',
-                multiple: false
-            },
-            'pdf-to-pdfa': {
-                title: '🔒 PDF para PDF/A',
-                description: 'Converta PDFs para o padrão de arquivamento PDF/A-1b',
-                accept: '.pdf',
-                multiple: true
-            },
-            'word-to-pdf': {
-                title: '📝 Word para PDF',
-                description: 'Converta documentos Word (.docx) para PDF - aceita múltiplos arquivos',
-                accept: '.docx',
-                multiple: true
-            },
-            'excel-to-pdf': {
-                title: '📊 Excel para PDF',
-                description: 'Converta planilhas Excel (.xlsx) para PDF',
-                accept: '.xlsx',
-                multiple: false
-            },
-            'txt-to-pdf': {
-                title: '📄 TXT para PDF',
-                description: 'Converta arquivos de texto simples (.txt) para PDF',
-                accept: '.txt',
-                multiple: false
-            },
-            'pdf-to-word': {
-                title: '🔄 PDF para Word',
-                description: 'Converta seus documentos PDF para Word (.docx) editável',
-                accept: '.pdf',
-                multiple: false
-            },
-            'ocr-pdf': {
-                title: '🔍 OCR em PDF',
-                description: 'Extraia texto de PDFs e imagens escaneadas usando reconhecimento óptico de caracteres (Tesseract)',
-                accept: '.pdf,.jpg,.jpeg,.png',
-                multiple: false
-            },
-            'html-to-pdf': {
-                title: '🌐 HTML para PDF',
-                description: 'Converta arquivos HTML para PDF formatado',
-                accept: '.html',
-                multiple: false
+            'en': {
+                'select_tool': 'Select a tool...',
+                'welcome_title': '🌟 Welcome to LocalPDF.io',
+                'welcome_subtitle': 'Choose a tool from the menu above to get started',
+                'upload_text': '📁 Click here or drag files to upload',
+                'choose_files': 'Choose Files',
+                'convert_btn': 'Convert',
+                'developed_by': 'Developed by Virgilio Borges',
+                'success_title': '✅ Success!',
+                'success_msg': 'File successfully converted and downloaded!',
+                'error_title': '❌ Error!',
+                'error_msg': 'An error occurred during conversion. Please try again.',
+                'remove_btn': 'Remove',
+                'options_delete_pages_label': 'Pages to delete (e.g. 1, 3, 5-7):',
+                'options_delete_pages_placeholder': 'e.g. 1, 3, 5-7',
+                'options_rotate_pages_label': 'Pages (empty for all, e.g. 1, 3, 5-7):',
+                'options_rotate_pages_placeholder': 'e.g. 1, 3, 5-7 or leave empty',
+                'options_rotate_angle_label': 'Rotation angle:',
+                'angle_90': '90° (Clockwise)',
+                'angle_180': '180°',
+                'angle_270': '270° (Counter-clockwise)',
+                'tools': {
+                    'pdf-to-images': { title: '🖼️ PDF to Images', desc: 'Convert each page of your PDF into separate images' },
+                    'images-to-pdf': { title: '📄 Images to PDF', desc: 'Combine multiple images into a single PDF file' },
+                    'merge-pdf': { title: '🔗 Merge PDFs', desc: 'Combine multiple PDF files into a single document' },
+                    'split-pdf': { title: '✂️ Split PDF', desc: 'Extract specific pages from your PDF' },
+                    'delete-pages-pdf': { title: '🗑️ Delete Pages', desc: 'Delete specific pages from your PDF (e.g. 1, 3, 5-7)' },
+                    'rotate-pages-pdf': { title: '🔃 Rotate Pages', desc: 'Rotate the pages of your PDF' },
+                    'compress-pdf': { title: '📦 Compress PDF', desc: 'Reduce the PDF file size while maintaining quality' },
+                    'pdf-to-pdfa': { title: '🔒 PDF to PDF/A', desc: 'Convert PDFs to the PDF/A-1b archiving standard' },
+                    'word-to-pdf': { title: '📝 Word to PDF', desc: 'Convert Word (.docx) documents to PDF - accepts multiple files' },
+                    'excel-to-pdf': { title: '📊 Excel to PDF', desc: 'Convert Excel (.xlsx) spreadsheets to PDF' },
+                    'txt-to-pdf': { title: '📄 TXT to PDF', desc: 'Convert plain text (.txt) files to PDF' },
+                    'pdf-to-word': { title: '🔄 PDF to Word', desc: 'Convert your PDF documents to editable Word (.docx)' },
+                    'ocr-pdf': { title: '🔍 PDF OCR', desc: 'Extract text from PDFs and scanned images using Optical Character Recognition (Tesseract)' },
+                    'html-to-pdf': { title: '🌐 HTML to PDF', desc: 'Convert HTML files to formatted PDF' }
+                }
             }
         };
 
+        let currentLang = 'pt-BR';
+        let currentTool = '';
+        let uploadedFiles = [];
+
+        const toolConfigs = {
+            'pdf-to-images': { accept: '.pdf', multiple: false },
+            'images-to-pdf': { accept: '.jpg,.jpeg,.png', multiple: true },
+            'merge-pdf': { accept: '.pdf', multiple: true },
+            'split-pdf': { accept: '.pdf', multiple: false },
+            'delete-pages-pdf': { accept: '.pdf', multiple: false },
+            'rotate-pages-pdf': { accept: '.pdf', multiple: false },
+            'compress-pdf': { accept: '.pdf', multiple: false },
+            'pdf-to-pdfa': { accept: '.pdf', multiple: true },
+            'word-to-pdf': { accept: '.docx', multiple: true },
+            'excel-to-pdf': { accept: '.xlsx', multiple: false },
+            'txt-to-pdf': { accept: '.txt', multiple: false },
+            'pdf-to-word': { accept: '.pdf', multiple: false },
+            'ocr-pdf': { accept: '.pdf,.jpg,.jpeg,.png', multiple: false },
+            'html-to-pdf': { accept: '.html', multiple: false }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            
+            // Update buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${lang}`).classList.add('active');
+            
+            // Update static translations
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[lang][key]) {
+                    el.innerText = i18n[lang][key];
+                }
+            });
+
+            // Update Dropdown options
+            updateDropdown();
+
+            // Update current tool if selected
+            if (currentTool) {
+                showTool(currentTool);
+            }
+            
+            // Update file list to translate 'Remove' button
+            updateFileList();
+        }
+
+        function updateDropdown() {
+            const select = document.getElementById('tool-select');
+            select.innerHTML = `<option value="" disabled ${!currentTool ? 'selected' : ''} data-i18n="select_tool">${i18n[currentLang]['select_tool']}</option>`;
+            
+            for (const [key, config] of Object.entries(toolConfigs)) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.innerText = i18n[currentLang].tools[key].title;
+                if (key === currentTool) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            }
+        }
+
+        function resetTool() {
+            currentTool = '';
+            document.getElementById('tool-select').value = '';
+            document.getElementById('welcome-header').classList.remove('hidden');
+            document.getElementById('tool-views').classList.add('hidden');
+            uploadedFiles = [];
+            hideResult();
+        }
+
+        function onToolSelectChange(toolName) {
+            if (toolName) {
+                showTool(toolName);
+            }
+        }
+
         function showTool(toolName) {
             currentTool = toolName;
-            const tool = tools[toolName];
+            const config = toolConfigs[toolName];
+            const trans = i18n[currentLang].tools[toolName];
 
-            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('welcome-header').classList.add('hidden');
             document.getElementById('tool-views').classList.remove('hidden');
-            document.getElementById('tool-title').innerText = tool.title;
-            document.getElementById('tool-description').innerText = tool.description;
-            document.getElementById('file-input').accept = tool.accept;
-            document.getElementById('file-input').multiple = tool.multiple;
+            
+            document.getElementById('tool-title').innerText = trans.title;
+            document.getElementById('tool-description').innerText = trans.desc;
+            document.getElementById('file-input').accept = config.accept;
+            document.getElementById('file-input').multiple = config.multiple;
 
             const optionsDiv = document.getElementById('options');
             optionsDiv.innerHTML = '';
             optionsDiv.classList.add('hidden');
             
+            const t = i18n[currentLang];
+            
             if (toolName === 'delete-pages-pdf') {
                 optionsDiv.innerHTML = `
-                    <div style="margin-top: 15px; text-align: left;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Páginas a excluir (ex: 1, 3, 5-7):</label>
-                        <input type="text" id="pages-input" placeholder="Ex: 1, 3, 5-7" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em;">
-                    </div>
+                    <label>${t.options_delete_pages_label}</label>
+                    <input type="text" id="pages-input" placeholder="${t.options_delete_pages_placeholder}">
                 `;
                 optionsDiv.classList.remove('hidden');
             } else if (toolName === 'rotate-pages-pdf') {
                 optionsDiv.innerHTML = `
-                    <div style="margin-top: 15px; text-align: left;">
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Páginas (vazio para todas, ex: 1, 3, 5-7):</label>
-                        <input type="text" id="pages-input" placeholder="Ex: 1, 3, 5-7 ou deixe vazio" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em; margin-bottom: 10px;">
-                        
-                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Ângulo de rotação:</label>
-                        <select id="rotation-angle" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1em;">
-                            <option value="90">90° (Sentido horário)</option>
-                            <option value="180">180°</option>
-                            <option value="270">270° (Sentido anti-horário)</option>
-                        </select>
-                    </div>
+                    <label>${t.options_rotate_pages_label}</label>
+                    <input type="text" id="pages-input" placeholder="${t.options_rotate_pages_placeholder}">
+                    
+                    <label>${t.options_rotate_angle_label}</label>
+                    <select id="rotation-angle">
+                        <option value="90">${t.angle_90}</option>
+                        <option value="180">${t.angle_180}</option>
+                        <option value="270">${t.angle_270}</option>
+                    </select>
                 `;
                 optionsDiv.classList.remove('hidden');
             }
 
+            // Keep uploaded files if the new tool accepts them? For simplicity, we clear them.
             uploadedFiles = [];
             updateFileList();
             hideResult();
         }
 
-        function showHome() {
-            document.getElementById('home-view').classList.remove('hidden');
-            document.getElementById('tool-views').classList.add('hidden');
-            uploadedFiles = [];
-        }
-
         function updateFileList() {
             const fileList = document.getElementById('file-list');
             const convertBtn = document.getElementById('convert-btn');
+            const t = i18n[currentLang];
 
             if (uploadedFiles.length === 0) {
                 fileList.innerHTML = '';
@@ -357,8 +398,8 @@ HTML_TEMPLATE = """
 
             fileList.innerHTML = uploadedFiles.map((file, index) => `
                 <div class="file-item">
-                    <span>📄 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                    <button onclick="removeFile(${index})" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">Remover</button>
+                    <span class="file-item-name">📄 ${file.name} <small style="color:#888;">(${(file.size / 1024 / 1024).toFixed(2)} MB)</small></span>
+                    <button class="remove-btn" onclick="removeFile(${index})">${t.remove_btn}</button>
                 </div>
             `).join('');
 
@@ -378,12 +419,13 @@ HTML_TEMPLATE = """
         // Upload de arquivos
         document.getElementById('file-input').addEventListener('change', function(e) {
             const files = Array.from(e.target.files);
-            if (tools[currentTool].multiple) {
+            if (toolConfigs[currentTool].multiple) {
                 uploadedFiles = uploadedFiles.concat(files);
             } else {
                 uploadedFiles = files.slice(0, 1);
             }
             updateFileList();
+            this.value = ''; // reset input
         });
 
         // Drag and drop
@@ -402,8 +444,10 @@ HTML_TEMPLATE = """
             e.preventDefault();
             uploadArea.classList.remove('dragover');
 
+            if (!currentTool) return; // do nothing if no tool is selected
+
             const files = Array.from(e.dataTransfer.files);
-            if (tools[currentTool].multiple) {
+            if (toolConfigs[currentTool].multiple) {
                 uploadedFiles = uploadedFiles.concat(files);
             } else {
                 uploadedFiles = files.slice(0, 1);
@@ -431,6 +475,9 @@ HTML_TEMPLATE = """
 
             document.getElementById('progress').classList.remove('hidden');
             document.getElementById('convert-btn').disabled = true;
+            document.getElementById('result').classList.add('hidden');
+
+            const t = i18n[currentLang];
 
             try {
                 const response = await fetch('/convert', {
@@ -449,22 +496,29 @@ HTML_TEMPLATE = """
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
 
-                    document.getElementById('result').innerHTML = '<h4>✅ Sucesso!</h4><p>Arquivo convertido e baixado com sucesso!</p>';
-                    document.getElementById('result').classList.remove('hidden');
+                    document.getElementById('result').className = 'result';
+                    document.getElementById('result').innerHTML = `<h4>${t.success_title}</h4><p>${t.success_msg}</p>`;
                 } else {
                     throw new Error('Erro na conversão');
                 }
             } catch (error) {
-                document.getElementById('result').innerHTML = '<h4>❌ Erro!</h4><p>Ocorreu um erro durante a conversão. Tente novamente.</p>';
-                document.getElementById('result').classList.remove('hidden');
+                document.getElementById('result').className = 'error';
+                document.getElementById('result').innerHTML = `<h4>${t.error_title}</h4><p>${t.error_msg}</p>`;
             } finally {
                 document.getElementById('progress').classList.add('hidden');
                 document.getElementById('convert-btn').disabled = false;
             }
         }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDropdown();
+            setLanguage('pt-BR');
+        });
     </script>
 </body>
 </html>
+
 """
 
 
