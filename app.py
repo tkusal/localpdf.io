@@ -47,6 +47,7 @@ def allowed_file(filename):
 HTML_TEMPLATE = """
 
 
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -70,6 +71,9 @@ HTML_TEMPLATE = """
         .lang-btn { background: none; border: none; color: white; padding: 8px 15px; cursor: pointer; font-size: 0.9em; font-weight: bold; transition: background 0.3s; }
         .lang-btn.active { background: white; color: #667eea; }
         
+        /* Acessibility / Focus */
+        .tool-select:focus, .lang-btn:focus, .upload-btn:focus, .convert-btn:focus, .remove-btn:focus, #pages-input:focus, #rotation-angle:focus { outline: 3px solid #f6ad55; outline-offset: 2px; }
+
         .container { max-width: 800px; margin: 40px auto; padding: 20px; flex-grow: 1; display: flex; flex-direction: column; align-items: center; width: 100%; }
         
         .header { text-align: center; color: white; margin-bottom: 30px; }
@@ -84,12 +88,20 @@ HTML_TEMPLATE = """
         .upload-area:hover { border-color: #667eea; background: #f0f4ff; transform: scale(1.02); }
         .upload-area.dragover { border-color: #667eea; background: #e8f0ff; transform: scale(1.05); }
         .file-input { display: none; }
-        .upload-btn { background: #667eea; color: white; padding: 12px 30px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.1em; transition: background 0.3s ease; pointer-events: none; }
+        .upload-btn { background: #667eea; color: white; padding: 12px 30px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.1em; transition: background 0.3s ease, transform 0.3s; pointer-events: none; display: inline-block; }
         .upload-btn:hover { background: #5a6fd8; }
         
+        /* Pulse Animation */
+        @keyframes pulse-soft {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.5); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(102, 126, 234, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+        }
+        .pulse-anim { animation: pulse-soft 2s infinite; }
+
         .convert-btn { background: #28a745; color: white; padding: 15px 40px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.2em; margin-top: 30px; transition: background 0.3s ease; width: 100%; font-weight: bold; }
         .convert-btn:hover { background: #1e7e34; }
-        .convert-btn:disabled { background: #ccc; cursor: not-allowed; }
+        .convert-btn:disabled { background: #6c757d; cursor: not-allowed; opacity: 0.8; }
         
         .file-list { margin-top: 20px; text-align: left; max-height: 250px; overflow-y: auto; padding-right: 10px; }
         .file-item { background: #f8f9fa; padding: 12px 15px; margin: 8px 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; transition: background 0.2s; }
@@ -101,8 +113,16 @@ HTML_TEMPLATE = """
         .progress { width: 100%; background: #f0f0f0; border-radius: 10px; margin: 30px 0; overflow: hidden; }
         .progress-bar { height: 20px; background: #667eea; border-radius: 10px; width: 0%; transition: width 0.3s ease; }
         
-        .result { margin-top: 20px; padding: 20px; background: #d4edda; border-radius: 10px; color: #155724; border: 1px solid #c3e6cb; }
-        .error { margin-top: 20px; padding: 20px; background: #f8d7da; border-radius: 10px; color: #721c24; border: 1px solid #f5c6cb; }
+        /* Toast Notifications */
+        .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; gap: 15px; }
+        .toast { background: white; border-radius: 10px; padding: 15px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 15px; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); border-left: 6px solid #ccc; max-width: 350px; }
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-left-color: #28a745; }
+        .toast.error { border-left-color: #dc3545; }
+        .toast-icon { font-size: 1.8em; }
+        .toast-content h4 { margin: 0 0 5px 0; color: #333; font-size: 1.1em; }
+        .toast-content p { margin: 0; color: #666; font-size: 0.95em; line-height: 1.4; }
+
         .hidden { display: none !important; }
         
         .footer { text-align: center; color: white; padding: 20px 0; background: rgba(0,0,0,0.1); margin-top: auto; }
@@ -127,6 +147,8 @@ HTML_TEMPLATE = """
             .container { margin: 20px auto; padding: 15px; }
             .tool-card { padding: 25px 15px; }
             .header h1 { font-size: 2em; }
+            .toast-container { bottom: 20px; right: 20px; left: 20px; align-items: center; }
+            .toast { max-width: 100%; width: 100%; }
         }
     </style>
 </head>
@@ -136,13 +158,13 @@ HTML_TEMPLATE = """
             🌟 LocalPDF.io
         </div>
         <div class="tool-select-wrapper">
-            <select id="tool-select" class="tool-select" onchange="onToolSelectChange(this.value)">
+            <select id="tool-select" class="tool-select" onchange="onToolSelectChange(this.value)" aria-label="Selecione a ferramenta">
                 <option value="" disabled selected data-i18n="select_tool">Selecione uma ferramenta...</option>
             </select>
         </div>
         <div class="lang-switch">
-            <button class="lang-btn active" onclick="setLanguage('pt-BR')" id="btn-pt-BR">PT-BR</button>
-            <button class="lang-btn" onclick="setLanguage('en')" id="btn-en">EN</button>
+            <button class="lang-btn active" onclick="setLanguage('pt-BR')" id="btn-pt-BR" aria-label="Mudar para Português">PT-BR</button>
+            <button class="lang-btn" onclick="setLanguage('en')" id="btn-en" aria-label="Mudar para Inglês">EN</button>
         </div>
     </nav>
 
@@ -160,7 +182,7 @@ HTML_TEMPLATE = """
             <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
                 <input type="file" id="file-input" class="file-input" multiple accept=".pdf,.docx,.jpg,.jpeg,.png,.txt,.xlsx,.html">
                 <p id="upload-text" data-i18n="upload_text" style="margin-bottom:15px; font-size:1.1em; color:#555;">📁 Clique aqui ou arraste arquivos para fazer upload</p>
-                <button class="upload-btn" data-i18n="choose_files">Escolher Arquivos</button>
+                <button class="upload-btn pulse-anim" id="upload-btn" data-i18n="choose_files">Escolher Arquivos</button>
             </div>
 
             <div id="file-list" class="file-list"></div>
@@ -174,8 +196,6 @@ HTML_TEMPLATE = """
             <div id="progress" class="progress hidden">
                 <div id="progress-bar" class="progress-bar"></div>
             </div>
-
-            <div id="result" class="hidden"></div>
         </div>
     </div>
 
@@ -191,6 +211,9 @@ HTML_TEMPLATE = """
         </div>
     </div>
 
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <script>
         // --- i18n ---
         const i18n = {
@@ -201,6 +224,7 @@ HTML_TEMPLATE = """
                 'upload_text': '📁 Clique aqui ou arraste arquivos para fazer upload',
                 'choose_files': 'Escolher Arquivos',
                 'convert_btn': 'Converter',
+                'converting': 'Convertendo... ⏳',
                 'developed_by': 'Desenvolvido por Virgilio Borges e contribuidores.',
                 'success_title': '✅ Sucesso!',
                 'success_msg': 'Arquivo convertido e baixado com sucesso!',
@@ -239,6 +263,7 @@ HTML_TEMPLATE = """
                 'upload_text': '📁 Click here or drag files to upload',
                 'choose_files': 'Choose Files',
                 'convert_btn': 'Convert',
+                'converting': 'Converting... ⏳',
                 'developed_by': 'Developed by Virgilio Borges and contributors.',
                 'success_title': '✅ Success!',
                 'success_msg': 'File successfully converted and downloaded!',
@@ -304,11 +329,15 @@ HTML_TEMPLATE = """
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (i18n[lang][key]) {
-                    el.innerText = i18n[lang][key];
+                    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                        el.placeholder = i18n[lang][key];
+                    } else {
+                        el.innerText = i18n[lang][key];
+                    }
                 }
             });
 
-            // Update Dropdown options (re-sort based on new language)
+            // Update Dropdown options
             updateDropdown();
 
             // Update current tool if selected
@@ -316,7 +345,7 @@ HTML_TEMPLATE = """
                 showTool(currentTool);
             }
             
-            // Update file list to translate 'Remove' button
+            // Update file list
             updateFileList();
         }
 
@@ -324,11 +353,9 @@ HTML_TEMPLATE = """
             const select = document.getElementById('tool-select');
             select.innerHTML = `<option value="" disabled ${!currentTool ? 'selected' : ''} data-i18n="select_tool">${i18n[currentLang]['select_tool']}</option>`;
             
-            // Sort tools alphabetically based on current language
             const sortedKeys = Object.keys(toolConfigs).sort((a, b) => {
                 const titleA = i18n[currentLang].tools[a].title;
                 const titleB = i18n[currentLang].tools[b].title;
-                // Remove emojis for sorting purposes to ensure true alphabetical sort
                 const cleanA = titleA.replace(/[^ -]/g, "").trim().toLowerCase();
                 const cleanB = titleB.replace(/[^ -]/g, "").trim().toLowerCase();
                 return cleanA.localeCompare(cleanB);
@@ -351,7 +378,7 @@ HTML_TEMPLATE = """
             document.getElementById('welcome-header').classList.remove('hidden');
             document.getElementById('tool-views').classList.add('hidden');
             uploadedFiles = [];
-            hideResult();
+            updateFileList();
         }
 
         function onToolSelectChange(toolName) {
@@ -402,19 +429,22 @@ HTML_TEMPLATE = """
 
             uploadedFiles = [];
             updateFileList();
-            hideResult();
         }
 
         function updateFileList() {
             const fileList = document.getElementById('file-list');
             const convertBtn = document.getElementById('convert-btn');
+            const uploadBtn = document.getElementById('upload-btn');
             const t = i18n[currentLang];
 
             if (uploadedFiles.length === 0) {
                 fileList.innerHTML = '';
                 convertBtn.classList.add('hidden');
+                uploadBtn.classList.add('pulse-anim'); // Add animation when empty
                 return;
             }
+
+            uploadBtn.classList.remove('pulse-anim'); // Remove animation when has files
 
             fileList.innerHTML = uploadedFiles.map((file, index) => `
                 <div class="file-item">
@@ -431,9 +461,29 @@ HTML_TEMPLATE = """
             updateFileList();
         }
 
-        function hideResult() {
-            document.getElementById('result').classList.add('hidden');
-            document.getElementById('progress').classList.add('hidden');
+        // Toasts
+        function showToast(type, title, message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const icon = type === 'success' ? '✅' : '❌';
+            toast.innerHTML = `
+                <div class="toast-icon">${icon}</div>
+                <div class="toast-content">
+                    <h4>${title}</h4>
+                    <p>${message}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 5000);
         }
 
         // Upload de arquivos
@@ -493,11 +543,12 @@ HTML_TEMPLATE = """
                 formData.append('angle', rotationAngle.value);
             }
 
-            document.getElementById('progress').classList.remove('hidden');
-            document.getElementById('convert-btn').disabled = true;
-            document.getElementById('result').classList.add('hidden');
-
             const t = i18n[currentLang];
+            const btn = document.getElementById('convert-btn');
+            
+            document.getElementById('progress').classList.remove('hidden');
+            btn.disabled = true;
+            btn.innerText = t.converting;
 
             try {
                 const response = await fetch('/convert', {
@@ -516,17 +567,16 @@ HTML_TEMPLATE = """
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
 
-                    document.getElementById('result').className = 'result';
-                    document.getElementById('result').innerHTML = `<h4>${t.success_title}</h4><p>${t.success_msg}</p>`;
+                    showToast('success', t.success_title, t.success_msg);
                 } else {
                     throw new Error('Erro na conversão');
                 }
             } catch (error) {
-                document.getElementById('result').className = 'error';
-                document.getElementById('result').innerHTML = `<h4>${t.error_title}</h4><p>${t.error_msg}</p>`;
+                showToast('error', t.error_title, t.error_msg);
             } finally {
                 document.getElementById('progress').classList.add('hidden');
-                document.getElementById('convert-btn').disabled = false;
+                btn.disabled = false;
+                btn.innerText = t.convert_btn;
             }
         }
 
@@ -538,6 +588,7 @@ HTML_TEMPLATE = """
     </script>
 </body>
 </html>
+
 
 
 """
